@@ -27,6 +27,8 @@ jobs:
         chmod +x build_site.sh
         ./build_site.sh _site/${{ github.ref_name }}
     - uses: actions/upload-pages-artifact@v5
+      with:
+        path: _site
 
   deploy:
     environment:
