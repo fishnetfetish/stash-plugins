@@ -22,7 +22,7 @@ settings:
     type: STRING
   preset:
     displayName: Encoding Preset
-    description: Encoding speed/quality preset (fast, medium, slow) - default is medium
+    description: Encoding speed/quality preset (fast, medium, slow) - default is fast
     type: STRING
   resolution:
     displayName: Resolution Limit
