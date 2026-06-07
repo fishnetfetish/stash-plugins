@@ -12,7 +12,7 @@ By default, files will be exported to the stash/generated/clips directory, but t
 ## Installation
 
 In Settings > Plugins, under Available Plugins, click Add source: https://fishnetfetish.github.io/stash-plugins/main/index.yml
-![Adding repository](docs/add-plugins.png)
+![Adding repository](../../docs/add-repository.png)
 
 Under the new source, check markerClipper and press Install
 
