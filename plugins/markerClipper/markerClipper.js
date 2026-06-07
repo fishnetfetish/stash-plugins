@@ -68,9 +68,15 @@
     }
 
     // Add clip buttons to all markers (with or without end time)
-    function addClipButtons() {
+    async function addClipButtons() {
         if (!isMarkersVisible()) {
             return;
+        }
+
+        // Reload markers if new ones may have been created
+        const hasUnidentified = document.querySelectorAll('[data-marker-id]').length < document.querySelectorAll('.primary-card .d-flex').length;
+        if (hasUnidentified || sceneMarkers.length === 0) {
+            await loadSceneMarkers();
         }
 
         const cards = document.querySelectorAll('.primary-card, .card');
