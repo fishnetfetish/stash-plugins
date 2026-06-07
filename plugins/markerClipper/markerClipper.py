@@ -154,15 +154,15 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
         output_path = os.path.join(output_dir, filename)
 
         # Build ffmpeg command (fast seek: -ss before -i)
-        vcodec = settings.get("vcodec", "libx264")
+        vcodec = settings.get("vcodec") or "libx264"
         cmd = [
             ffmpeg_path,
             "-ss", str(start_time),
             "-i", video_path,
             "-t", str(duration),
             "-c:v", vcodec,
-            "-c:a", settings.get("acodec", "aac"),
-            "-preset", settings.get("preset", "medium"),
+            "-c:a", settings.get("acodec") or "aac",
+            "-preset", settings.get("preset") or "medium",
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
