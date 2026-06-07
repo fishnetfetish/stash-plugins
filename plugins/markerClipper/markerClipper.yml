@@ -48,3 +48,8 @@ exec:
   - python
   - "{pluginDir}/markerClipper.py"
 interface: raw
+tasks:
+  - name: "clip_marker"
+    description: Extract video clip from a marker
+    defaultArgs:
+      mode: clip_marker
