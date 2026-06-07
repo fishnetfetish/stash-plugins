@@ -23,7 +23,7 @@ Under the new source, check markerClipper and press Install
 
 ## Configuration
 
-Settings available in the plugin UI (outputDir, vcodec, acodec, preset, resolution, paddingBefore/After, filenameTemplate).
+Settings available in Stash Settings > Plugins > markerClipper
 
 ## Usage
 
@@ -31,6 +31,27 @@ Settings available in the plugin UI (outputDir, vcodec, acodec, preset, resoluti
 2. Click the "Markers" tab.
 3. Click ✂️ buttons next to markers to queue clips.
 4. Monitor progress in Stash's Tasks section.
+
+## Troubleshooting
+
+If you don't see the clip_marker task running after clicking a clip button, check the Stash Settings > Logs for possible errors.
+
+### Python not found (Windows)
+
+As noted by Stash Docs: https://docs.stashapp.cc/installation/windows/
+```
+As a result of running as administrator Stash might fail to detect your Python installation in PATH, so you need point it the correct way yourself after installation. In Settings > System and under Applications Paths header set Python Executable Path.
+```
+
+### ModuleNotFoundError: No module named 'stashapi'
+
+Install the stashapp-tools module with the following command:
+```pip install stashapp-tools```
+
+### FFmpeg not found
+
+From Stash Settings > System, click the "Download FFmpeg" button
+Alternatively, set up your own FFmpeg installation and update the Stash paths for ffmpeg and ffprobe
 
 ## License
 

@@ -1,12 +1,12 @@
-import stashapi.log as log
-from stashapi.stashapp import StashInterface
-import sys
 import json
 import os
-import subprocess
-import time
 import re
-from pathlib import Path
+import subprocess
+import sys
+import time
+
+import stashapi.log as log
+from stashapi.stashapp import StashInterface
 
 def get_ffmpeg_path(stash, settings=None):
     """Get ffmpeg path: override from settings if set, else from systemStatus"""
@@ -30,6 +30,7 @@ def get_generated_path(stash):
     return config["general"]["generatedPath"]
 
 def get_video_resolution(video_path, ffmpeg_path):
+    """Return video resolution 'WxH' via ffprobe (derived from ffmpeg_path), or None on error."""
     ffprobe_path = ffmpeg_path.replace("ffmpeg", "ffprobe")
     cmd = [ffprobe_path, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", video_path]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -91,22 +92,8 @@ def get_marker_details(stash, scene_id, marker_id):
 def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
     """Extract video clip from marker using ffmpeg"""
     try:
-        # Get scene details
-        scene_query = """
-        query FindScene($id: ID!) {
-            findScene(id: $id) {
-                id
-                title
-                files {
-                    path
-                }
-            }
-        }
-        """
-        scene_result = stash.call_GQL(scene_query, {"id": scene_id})
-        scene = scene_result["findScene"]
-
-        if not scene or not scene["files"]:
+        scene = marker.get("scene")
+        if not scene or not scene.get("files"):
             log.error(f"No video file found for scene {scene_id}")
             return False
 
@@ -172,8 +159,8 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
         elif vcodec in ("h264_nvenc", "av1_nvenc"):
             cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
 
-        resolution = settings.get("resolution", "")
-        if resolution:
+        resolution = settings.get("resolution") or "original"
+        if resolution != "original":
             source_res = get_video_resolution(video_path, ffmpeg_path)
             if source_res:
                 try:
@@ -181,7 +168,7 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
                     lw, lh = map(int, resolution.split("x"))
                     if sw > lw or sh > lh:
                         cmd.extend(["-vf", f"scale={resolution}"])
-                except:
+                except Exception:
                     pass
 
         cmd.append(output_path)
@@ -296,7 +283,6 @@ def submit_clip_task():
             "message": f"Error submitting clip task: {str(e)}"
         }
         print(json.dumps(response))
-
 
 
 def clip_marker_task():
