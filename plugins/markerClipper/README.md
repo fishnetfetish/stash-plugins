@@ -6,15 +6,15 @@ By default, files will be exported to the stash/generated/clips directory, but t
 ## Features
 
 - One-Click Clipping: Click the ✂️ button next to any marker to extract that video segment
-- Background Processing: Submits clip jobs to StashApp's background task system
+- Background Processing: Submits clip jobs to Stash's background task system
 - FFmpeg Integration: Uses FFmpeg for high-quality video extraction
 
 ## Installation
 
-1. Copy plugin files to your StashApp plugins directory (or install via CommunityScripts).
+1. Copy plugin files to your Stash plugins directory (or install via CommunityScripts)
 2. Install Python dependencies: `pip install -r requirements.txt`
-3. Configure settings via Stash plugin UI.
-4. Restart StashApp
+3. Reload Plugins
+4. Configure settings via Stash Settings > Plugins
 
 ## Known Limitations
 - Requires ffmpeg available via Stash or override path.
