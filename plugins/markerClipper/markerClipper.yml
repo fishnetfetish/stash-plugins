@@ -1,7 +1,7 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
 version: 1.0.0
-url: https://github.com/stashapp/CommunityScripts/tree/main/plugins/markerClipper
+url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
     - markerClipper.js
