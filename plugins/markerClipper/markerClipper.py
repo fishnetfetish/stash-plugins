@@ -154,17 +154,23 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
         output_path = os.path.join(output_dir, filename)
 
         # Build ffmpeg command (fast seek: -ss before -i)
+        vcodec = settings.get("vcodec", "libx264")
         cmd = [
             ffmpeg_path,
             "-ss", str(start_time),
             "-i", video_path,
             "-t", str(duration),
-            "-c:v", settings.get("vcodec", "libx264"),
+            "-c:v", vcodec,
             "-c:a", settings.get("acodec", "aac"),
-            "-preset", settings.get("preset", "fast"),
+            "-preset", settings.get("preset", "medium"),
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
+        # VBR bitrate mode (active)
+        if vcodec == "libx264":
+            cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        elif vcodec in ("h264_nvenc", "av1_nvenc"):
+            cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
 
         resolution = settings.get("resolution", "")
         if resolution:
@@ -254,7 +260,7 @@ def submit_clip_task():
         default_settings = {
             "vcodec": "libx264",
             "acodec": "aac",
-            "preset": "fast",
+            "preset": "medium",
             "resolution": "original",
             "paddingBefore": 0,
             "paddingAfter": 0,

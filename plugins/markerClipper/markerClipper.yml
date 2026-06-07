@@ -1,6 +1,6 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
-version: 1.0.0
+version: 1.0.1
 url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
@@ -22,7 +22,7 @@ settings:
     type: STRING
   preset:
     displayName: Encoding Preset
-    description: Encoding speed/quality preset (fast, medium, slow) - default is fast
+    description: Encoding speed/quality preset (fast, medium, slow) - default is medium (better compression)
     type: STRING
   resolution:
     displayName: Resolution Limit
