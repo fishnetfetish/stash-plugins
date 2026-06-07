@@ -1,0 +1,70 @@
+/* markerClipper.css - Styling for marker clipping UI */
+
+.marker-clipper-btn {
+    transition: all 0.15s ease-in-out;
+    border-width: 1px;
+}
+
+.marker-clipper-btn:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.marker-clipper-btn:active,
+.marker-clipper-btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.5);
+}
+
+.marker-clipper-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.marker-clipper-btn .fa-spinner {
+    animation: fa-spin 1s infinite linear;
+}
+
+/* Small button styling for marker detail pages */
+.marker-clipper-btn.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 0.2rem;
+}
+
+/* Integration with Stash UI */
+.marker-clipper-btn.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.marker-clipper-btn.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+/* Success state styling (can be applied via JS) */
+.marker-clipper-btn.marker-clipper-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: #fff;
+}
+
+.marker-clipper-btn.marker-clipper-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+/* Error state styling (can be applied via JS) */
+.marker-clipper-btn.marker-clipper-error {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.marker-clipper-btn.marker-clipper-error:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}

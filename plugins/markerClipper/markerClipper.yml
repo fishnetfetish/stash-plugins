@@ -1,0 +1,55 @@
+name: markerClipper
+description: Plugin for extracting video clips from markers using ffmpeg
+version: 1.0.0
+url: https://github.com/stashapp/CommunityScripts/tree/main/plugins/markerClipper
+ui:
+  javascript:
+    - markerClipper.js
+  css:
+    - markerClipper.css
+settings:
+  outputDir:
+    displayName: Output Directory
+    description: Directory where marker clips will be saved (defaults to Stash's generated path + clips subdirectory)
+    type: STRING
+  vcodec:
+    displayName: Video Codec
+    description: Video codec for encoding (av1_nvenc, h264_nvenc, libx264, libx265) - default is libx264
+    type: STRING
+  acodec:
+    displayName: Audio Codec
+    description: Audio codec for encoding (aac, mp3, ac3) - default is aac
+    type: STRING
+  preset:
+    displayName: Encoding Preset
+    description: Encoding speed/quality preset (fast, medium, slow) - default is medium
+    type: STRING
+  resolution:
+    displayName: Resolution Limit
+    description: Maximum output resolution (e.g. 1920x1080); sources <= limit keep original resolution, larger sources are scaled to the limit - default is original (no limit)
+    type: STRING
+  paddingBefore:
+    displayName: Padding Before (seconds)
+    description: Seconds to include before marker start time - default is 0
+    type: NUMBER
+  paddingAfter:
+    displayName: Padding After (seconds)
+    description: Seconds to include after marker end time - default is 0
+    type: NUMBER
+  filenameTemplate:
+    displayName: Filename Template
+    description: Template for output filenames using {scene_title}, {scene_id}, {marker_title}, {timestamp} - default is clip_{scene_id}_{timestamp}_{marker_title}
+    type: STRING
+  ffmpegPathOverride:
+    displayName: FFmpeg Path Override
+    description: Optional full path to ffmpeg binary (falls back to Stash systemStatus if empty)
+    type: STRING
+exec:
+  - python
+  - "{pluginDir}/markerClipper.py"
+interface: raw
+tasks:
+  - name: "clip_marker"
+    description: Extract video clip from a marker
+    defaultArgs:
+      mode: clip_marker
