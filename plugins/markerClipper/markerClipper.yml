@@ -1,6 +1,6 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
-version: 1.0.3
+version: 1.0.4
 url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
@@ -10,7 +10,7 @@ ui:
 settings:
   outputDir:
     displayName: Output Directory
-    description: Directory where marker clips will be saved (defaults to Stash's generated path + clips subdirectory)
+    description: Directory where marker clips will be saved (defaults to Stash generated path + clips subdirectory)
     type: STRING
   vcodec:
     displayName: Video Codec
@@ -26,7 +26,7 @@ settings:
     type: STRING
   resolution:
     displayName: Resolution Limit
-    description: Maximum output resolution (e.g. 1920x1080); sources <= limit keep original resolution, larger sources are scaled to the limit - default is original (no limit)
+    description: Maximum output resolution (e.g. 1920x1080); sources <= limit keep original resolution, larger sources are scaled to the limit - leave empty for original (no limit)
     type: STRING
   paddingBefore:
     displayName: Padding Before (seconds)
@@ -42,7 +42,11 @@ settings:
     type: STRING
   ffmpegPathOverride:
     displayName: FFmpeg Path Override
-    description: Optional full path to ffmpeg binary (falls back to Stash systemStatus if empty)
+    description: Optional full path to ffmpeg binary (falls back to Stash config if empty)
+    type: STRING
+  ffprobePathOverride:
+    displayName: FFprobe Path Override
+    description: Optional full path to ffprobe binary (falls back to Stash config if empty)
     type: STRING
 exec:
   - python

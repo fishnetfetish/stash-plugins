@@ -34,13 +34,15 @@ Settings available in Stash Settings > Plugins > markerClipper
 
 ## Troubleshooting
 
-If you don't see the clip_marker task running after clicking a clip button, check the Stash Settings > Logs for possible errors.
+If you don't see the clip_marker task running after clicking a ✂️ button, check the Stash Settings > Logs for possible errors.
 
 ### Python not found (Windows)
 
 As noted by Stash Docs: https://docs.stashapp.cc/installation/windows/
 ```
-As a result of running as administrator Stash might fail to detect your Python installation in PATH, so you need point it the correct way yourself after installation. In Settings > System and under Applications Paths header set Python Executable Path.
+As a result of running as administrator Stash might fail to detect your Python installation in PATH, 
+so you need point it the correct way yourself after installation. 
+In Settings > System and under Applications Paths header set Python Executable Path.
 ```
 
 ### ModuleNotFoundError: No module named 'stashapi'

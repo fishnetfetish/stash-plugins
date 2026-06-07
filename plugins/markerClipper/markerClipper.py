@@ -8,30 +8,30 @@ import time
 import stashapi.log as log
 from stashapi.stashapp import StashInterface
 
-def get_ffmpeg_path(stash, settings=None):
-    """Get ffmpeg path: override from settings if set, else from systemStatus"""
-    if settings and settings.get("ffmpegPathOverride"):
-        override = settings["ffmpegPathOverride"].strip()
-        if override and os.path.exists(override):
-            return override
+def get_paths(stash, settings=None):
+    """Get ffmpeg/ffprobe paths: override from settings if set, else from systemStatus"""
+    ffmpeg_override = settings.get("ffmpegPathOverride", "").strip() if settings else ""
+    ffprobe_override = settings.get("ffprobePathOverride", "").strip() if settings else ""
     query = """
     query {
         systemStatus {
             ffmpegPath
+            ffprobePath
         }
     }
     """
     result = stash.call_GQL(query)
-    return result["systemStatus"]["ffmpegPath"]
+    ffmpeg_path = ffmpeg_override if ffmpeg_override and os.path.exists(ffmpeg_override) else result["systemStatus"]["ffmpegPath"]
+    ffprobe_path = ffprobe_override if ffprobe_override and os.path.exists(ffprobe_override) else result["systemStatus"]["ffprobePath"]
+    return ffmpeg_path, ffprobe_path
 
 def get_generated_path(stash):
     """Get Stash's generated path from configuration"""
     config = stash.get_configuration()
     return config["general"]["generatedPath"]
 
-def get_video_resolution(video_path, ffmpeg_path):
-    """Return video resolution 'WxH' via ffprobe (derived from ffmpeg_path), or None on error."""
-    ffprobe_path = ffmpeg_path.replace("ffmpeg", "ffprobe")
+def get_video_resolution(video_path, ffprobe_path):
+    """Return video resolution 'WxH' via ffprobe, or None on error."""
     cmd = [ffprobe_path, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", video_path]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
@@ -89,7 +89,7 @@ def get_marker_details(stash, scene_id, marker_id):
 
     return None
 
-def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
+def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
     """Extract video clip from marker using ffmpeg"""
     try:
         scene = marker.get("scene")
@@ -161,7 +161,7 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, stash):
 
         resolution = settings.get("resolution") or "original"
         if resolution != "original":
-            source_res = get_video_resolution(video_path, ffmpeg_path)
+            source_res = get_video_resolution(video_path, ffprobe_path)
             if source_res:
                 try:
                     sw, sh = map(int, source_res.split("x"))
@@ -248,13 +248,14 @@ def submit_clip_task():
             "vcodec": "libx264",
             "acodec": "aac",
             "preset": "medium",
-            "resolution": "original",
+            "resolution": "",
             "paddingBefore": 0,
             "paddingAfter": 0,
             "defaultDuration": 10,
             "filenameTemplate": "clip_{scene_id}_{timestamp}_{marker_title}",
             "outputDir": None,
-            "ffmpegPathOverride": ""
+            "ffmpegPathOverride": "",
+            "ffprobePathOverride": ""
         }
 
         # Merge plugin settings with defaults (only known keys)
@@ -310,16 +311,19 @@ def clip_marker_task():
         log.info(f"Processing clip task for marker {marker_id} in scene {scene_id}")
         log.progress(10)
 
-        # Get ffmpeg path
-        ffmpeg_path = get_ffmpeg_path(stash, settings)
+        # Get ffmpeg/ffprobe paths
+        ffmpeg_path, ffprobe_path = get_paths(stash, settings)
         if not ffmpeg_path or not os.path.exists(ffmpeg_path):
             log.error(f"ffmpeg not found at: {ffmpeg_path}")
+            return
+        if not ffprobe_path or not os.path.exists(ffprobe_path):
+            log.error(f"ffprobe not found at: {ffprobe_path}")
             return
 
         log.progress(20)
 
         # Clip the marker
-        success = clip_marker(scene_id, marker, settings, ffmpeg_path, stash)
+        success = clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash)
         if success:
             log.progress(100)
             log.debug("Marker clipping completed successfully")
