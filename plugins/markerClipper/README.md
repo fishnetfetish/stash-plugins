@@ -11,10 +11,10 @@ By default, files will be exported to the stash/generated/clips directory, but t
 
 ## Installation
 
-1. Copy plugin files to your Stash plugins directory (or install via CommunityScripts)
-2. Install Python dependencies: `pip install -r requirements.txt`
-3. Reload Plugins
-4. Configure settings via Stash Settings > Plugins
+In Settings > Plugins, under Available Plugins, click Add source: https://fishnetfetish.github.io/stash-plugins/main/index.yml
+![Adding repository](docs/add-plugins.png)
+
+Under the new source, check markerClipper and press Install
 
 ## Known Limitations
 - Requires ffmpeg available via Stash or override path.
