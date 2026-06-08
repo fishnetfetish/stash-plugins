@@ -29,7 +29,7 @@ Settings available in Stash Settings > Plugins > markerClipper
 
 1. Navigate to a scene with markers.
 2. Click the "Markers" tab.
-3. Click ✂️ buttons next to markers to queue clips.
+3. Click ✂️ buttons next to markers to queue clips (or the ⚙️ gear for one-time Resolution/Preset/Bitrate overrides).
 4. Monitor progress in Stash's Tasks section.
 
 ## Troubleshooting
