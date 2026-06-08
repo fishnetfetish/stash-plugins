@@ -179,10 +179,14 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
         # Execute ffmpeg (force overwrite)
         cmd.insert(1, "-y")
         try:
+            encode_start = time.time()
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            elapsed = time.time() - encode_start
             stderr = result.stderr or result.stdout
             if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                log.info(f"Successfully created clip: {output_path}")
+                mins, secs = divmod(int(elapsed), 60)
+                took = f"{mins}m{secs}s" if mins else f"{secs}s"
+                log.info(f"Successfully created clip (took {took}): {output_path}")
                 return True
             else:
                 log.error(f"ffmpeg failed (code {result.returncode}): {stderr}")
@@ -346,15 +350,26 @@ try:
         PLUGIN_ARGS = json_input["args"]["mode"]
         log.debug(f"Plugin mode: {PLUGIN_ARGS}")
         if "clip_marker" == PLUGIN_ARGS:
-            # Check if this is a background task execution (has settings_json) or UI submission
+            # Stash plugins use a single entrypoint (runPluginOperation).
+            # We therefore receive TWO distinct calls with the same mode="clip_marker":
+            #
+            # 1. UI submission (from JS callPluginAPI): contains scene_id + marker_id.
+            #    → submit_clip_task() validates, builds settings, then calls
+            #      stash.run_plugin_task(...) to enqueue the real work.
+            #
+            # 2. Background execution (later, when the queued task runs):
+            #    contains the same ids PLUS settings_json.
+            #    → clip_marker_task() performs the actual ffmpeg clip extraction.
+            #
+            # The presence/absence of settings_json is the discriminator between the two phases.
             if "settings_json" in json_input["args"]:
-                log.debug("Calling clip_marker_task - background task execution")
+                log.debug("clip_marker mode: settings_json present → executing background clip_marker_task()")
                 clip_marker_task()
             elif "scene_id" in json_input["args"] and "marker_id" in json_input["args"]:
-                log.debug("Calling submit_clip_task - UI submission")
+                log.debug("clip_marker mode: scene_id+marker_id present → handling UI submit_clip_task()")
                 submit_clip_task()
             else:
-                log.error("Invalid arguments for clip_marker mode")
+                log.error("clip_marker mode: invalid argument combination")
                 print(json.dumps({"success": False, "message": "Invalid arguments for clip_marker mode"}))
         else:
             log.error(f"Unknown mode: {PLUGIN_ARGS}")
