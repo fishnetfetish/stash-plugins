@@ -108,7 +108,7 @@
                 const loopBtn = dFlex ? dFlex.querySelector('button.btn-link') : null;
 
                 const clipButton = document.createElement('button');
-                clipButton.className = 'btn btn-sm btn-outline-secondary marker-clipper-btn ml-1';
+                clipButton.className = 'btn btn-sm btn-outline-secondary marker-clipper-btn marker-clipper-main ml-1';
                 clipButton.innerHTML = '✂️';
                 clipButton.title = 'Extract video clip from this marker';
 
@@ -117,23 +117,128 @@
                     clipMarker(loopBtn || clipButton); // pass any button in the row for context
                 });
 
+                const optionsButton = document.createElement('button');
+                optionsButton.className = 'btn btn-sm btn-outline-secondary marker-clipper-btn marker-clipper-options';
+                optionsButton.innerHTML = '⚙️';
+                optionsButton.title = 'Clip options (per-clip overrides)';
+
+                optionsButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showClipOptionsModal(clipButton);
+                });
+
+                const btnGroup = document.createElement('span');
+                btnGroup.className = 'marker-clipper-btn-group';
+                btnGroup.appendChild(clipButton);
+                btnGroup.appendChild(optionsButton);
+
                 if (loopBtn) {
-                    loopBtn.insertAdjacentElement('afterend', clipButton);
+                    loopBtn.insertAdjacentElement('afterend', btnGroup);
                 } else if (dFlex) {
-                    // Insert right after the timestamp div for consistent position
                     const timestampDiv = dFlex.querySelector('div');
                     if (timestampDiv) {
-                        timestampDiv.insertAdjacentElement('afterend', clipButton);
+                        timestampDiv.insertAdjacentElement('afterend', btnGroup);
                     } else {
-                        dFlex.appendChild(clipButton);
+                        dFlex.appendChild(btnGroup);
                     }
                 }
             });
         });
     }
 
+    function showClipOptionsModal(loopButton) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Clip Options</h5>
+                        <button type="button" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="clip-options-form">
+                            <div class="form-group">
+                                <label>Resolution</label>
+                                <select class="form-control" name="max_resolution">
+                                    <option value="">Default</option>
+                                    <option value="854x480">480p</option>
+                                    <option value="1280x720">720p</option>
+                                    <option value="1920x1080">1080p</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Preset</label>
+                                <select class="form-control" name="preset">
+                                    <option value="">Default</option>
+                                    <option value="superfast">superfast</option>
+                                    <option value="veryfast">veryfast</option>
+                                    <option value="faster">faster</option>
+                                    <option value="fast">fast</option>
+                                    <option value="medium">medium</option>
+                                    <option value="slow">slow</option>
+                                    <option value="slower">slower</option>
+                                    <option value="veryslow">veryslow</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Video Codec</label>
+                                <input type="text" class="form-control" name="vcodec" placeholder="libx264">
+                            </div>
+                            <div class="form-group">
+                                <label>Audio Codec</label>
+                                <input type="text" class="form-control" name="acodec" placeholder="aac">
+                            </div>
+                            <div class="form-group">
+                                <label>Bitrate (kbps)</label>
+                                <input type="number" class="form-control" name="video_bitrate" placeholder="3500">
+                            </div>
+                            <div class="form-group custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" name="matchBitrate" id="matchBitrate">
+                                <label class="custom-control-label" for="matchBitrate">Match source bitrate</label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="modal-clip">✂️ Clip</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const close = () => { modal.remove(); };
+        modal.querySelector('.close').onclick = close;
+        modal.querySelector('#modal-cancel').onclick = close;
+        modal.querySelector('#modal-clip').onclick = async () => {
+            const form = modal.querySelector('#clip-options-form');
+            const formData = new FormData(form);
+            const settings = {};
+            for (const [key, value] of formData.entries()) {
+                if (value === '') continue;
+                if (key === 'video_bitrate') {
+                    settings[key] = parseInt(value, 10);
+                } else {
+                    settings[key] = value;
+                }
+            }
+            // Always send matchBitrate state so modal can override plugin setting
+            const matchBitrateEl = form.querySelector('input[name="matchBitrate"]');
+            settings.matchBitrate = matchBitrateEl.checked;
+            if (Object.keys(settings).length === 0) {
+                await clipMarker(loopButton);
+            } else {
+                await clipMarker(loopButton, settings);
+            }
+            close();
+        };
+        modal.onclick = (e) => { if (e.target === modal) close(); };
+    }
+
     // Handle marker clipping
-    async function clipMarker(loopButton) {
+    async function clipMarker(loopButton, settings = {}) {
         // Extract marker identification info
         const markerInfo = await getMarkerInfo(loopButton);
         console.log('Extracted marker info:', markerInfo);
@@ -156,7 +261,11 @@
         button.disabled = true;
         button.classList.remove('marker-clipper-success', 'marker-clipper-error');
 
-        callPluginAPI('clip_marker', markerInfo)
+        const apiArgs = { ...markerInfo };
+        if (Object.keys(settings).length > 0) {
+            apiArgs.override_json = JSON.stringify(settings);
+        }
+        callPluginAPI('clip_marker', apiArgs)
             .then(result => {
                 let response = null;
                 if (result) {

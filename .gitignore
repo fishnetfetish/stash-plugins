@@ -3,3 +3,4 @@
 **/deploy.ps1
 **/__pycache__
 .mypy_cache/
+.kilo/

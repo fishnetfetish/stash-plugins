@@ -165,21 +165,20 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
-        # Bitrate handling
-        match_bitrate = settings.get("matchBitrate", False)
-        if match_bitrate:
-            br = get_source_bitrate(video_path, ffprobe_path) or 2500
-            maxr = f"{int(br * 1.1)}k"
-            bufs = f"{int(br * 2.2)}k"
-            if vcodec == "libx264":
-                cmd.extend(["-crf", "20", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
-            elif vcodec in ("h264_nvenc", "av1_nvenc"):
-                cmd.extend(["-crf", "20", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        # Bitrate handling: custom video_bitrate > matchBitrate > 3500
+        video_bitrate = settings.get("video_bitrate")
+        if video_bitrate:
+            video_bitrate = int(video_bitrate)
+        elif settings.get("matchBitrate"):
+            video_bitrate = int(get_source_bitrate(video_path, ffprobe_path) or 3500)
         else:
-            if vcodec == "libx264":
-                cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
-            elif vcodec in ("h264_nvenc", "av1_nvenc"):
-                cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+            video_bitrate = 3500
+        maxr = f"{video_bitrate * 2}k"
+        bufs = f"{video_bitrate * 2}k"
+        if vcodec == "libx264":
+            cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        elif vcodec in ("h264_nvenc", "av1_nvenc"):
+            cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
 
         resolution = settings.get("resolution") or "original"
         if resolution != "original":
@@ -282,11 +281,21 @@ def submit_clip_task():
             "outputDir": None,
             "ffmpegPathOverride": "",
             "ffprobePathOverride": "",
-            "matchBitrate": False
+            "matchBitrate": False,
+            "video_bitrate": ""
         }
 
         # Merge plugin settings with defaults (only known keys)
         settings = {**default_settings, **{k: v for k, v in plugin_config.items() if k in default_settings}}
+
+        # Support per-clip override from modal (override_json in initial call)
+        override_json = args.get("override_json")
+        if override_json:
+            try:
+                overrides = json.loads(override_json)
+                settings.update({k: v for k, v in overrides.items() if k in default_settings})
+            except Exception:
+                pass
 
         # Submit as a background task using stash.run_plugin_task (async)
         task_args = {

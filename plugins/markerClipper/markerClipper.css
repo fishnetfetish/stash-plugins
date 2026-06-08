@@ -68,3 +68,32 @@
     background-color: #c82333;
     border-color: #bd2130;
 }
+
+.marker-clipper-btn-group {
+    display: inline-flex;
+    margin-left: 0.25rem;
+}
+
+.marker-clipper-btn-group .marker-clipper-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+    flex: 3;
+    min-width: 2.25em;
+}
+
+.marker-clipper-btn-group .marker-clipper-options {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    flex: 2;
+    min-width: 1.5em;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    background-color: rgba(0,0,0,0.5);
+}
