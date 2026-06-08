@@ -161,10 +161,11 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
             "-t", str(duration),
             "-c:v", vcodec,
             "-c:a", settings.get("acodec") or "aac",
-            "-preset", settings.get("preset") or "medium",
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
+        if "264" in vcodec.lower():
+            cmd.extend(["-preset", settings.get("preset") or "medium"])
         # Bitrate handling: custom video_bitrate > matchBitrate > 3500
         video_bitrate = settings.get("video_bitrate")
         if video_bitrate:
@@ -175,13 +176,13 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
             video_bitrate = 3500
         maxr = f"{video_bitrate * 2}k"
         bufs = f"{video_bitrate * 2}k"
-        cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k"])
-        if "h264" in vcodec.lower():
-            if "nvenc" in vcodec.lower():
+        cmd.extend(["-b:v", f"{video_bitrate}k", "-b:a", "128k"])
+        if any(x in vcodec.lower() for x in ("264", "nvenc", "amf", "qsv")):
+            cmd.extend(["-maxrate", maxr, "-bufsize", bufs])
+        if any(c in vcodec.lower() for c in ("264", "av1")):
+            if any(hw in vcodec.lower() for hw in ("nvenc", "amf", "qsv")):
                 cmd.extend(["-rc", "vbr"])
             cmd.extend(["-pix_fmt", "yuv420p"])
-        elif "av1" in vcodec.lower():
-            cmd.extend(["-rc", "vbr", "-pix_fmt", "yuv420p"])
 
         resolution = settings.get("resolution") or "original"
         if resolution != "original":
