@@ -161,11 +161,13 @@
                         <form id="clip-options-form">
                             <div class="form-group">
                                 <label>Resolution</label>
-                                <select class="form-control" name="max_resolution">
+                                <select class="form-control" name="resolution">
                                     <option value="">Default</option>
+                                    <option value="original">Original</option>
                                     <option value="854x480">480p</option>
                                     <option value="1280x720">720p</option>
                                     <option value="1920x1080">1080p</option>
+                                    <option value="3840x2160">4K</option>
                                 </select>
                             </div>
                             <div class="form-group">
