@@ -1,6 +1,6 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
-version: 1.1.1
+version: 1.1.2
 url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
@@ -34,7 +34,7 @@ settings:
     type: BOOLEAN
   video_bitrate:
     displayName: Video Bitrate (kbps)
-    description: Target video bitrate in kbps for one-time overrides (default 3500)
+    description: Target video bitrate in kbps.  Setting to 0 will use source bitrate - default is 3500
     type: NUMBER
   paddingBefore:
     displayName: Padding Before (seconds)

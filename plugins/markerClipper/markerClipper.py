@@ -166,14 +166,10 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
         ]
         if "264" in vcodec.lower():
             cmd.extend(["-preset", settings.get("preset") or "medium"])
-        # Bitrate handling: custom video_bitrate > matchBitrate > 3500
-        video_bitrate = settings.get("video_bitrate")
-        if video_bitrate:
-            video_bitrate = int(video_bitrate)
-        elif settings.get("matchBitrate"):
+        # Bitrate handling: matchBitrate > custom video_bitrate > 3500
+        video_bitrate = int(settings.get("video_bitrate", 3500))
+        if settings.get("matchBitrate") or video_bitrate == 0:
             video_bitrate = int(get_source_bitrate(video_path, ffprobe_path) or 3500)
-        else:
-            video_bitrate = 3500
         maxr = f"{video_bitrate * 2}k"
         bufs = f"{video_bitrate * 2}k"
         cmd.extend(["-b:v", f"{video_bitrate}k", "-b:a", "128k"])
@@ -205,7 +201,7 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
         cmd.insert(1, "-y")
         try:
             encode_start = time.time()
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
             elapsed = time.time() - encode_start
             stderr = result.stderr or result.stdout
             if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
@@ -219,7 +215,7 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
                     os.remove(output_path)
                 return False
         except subprocess.TimeoutExpired:
-            log.error("ffmpeg timed out after 300s")
+            log.error("ffmpeg timed out after 1800s")
             if os.path.exists(output_path):
                 os.remove(output_path)
             return False
@@ -286,7 +282,7 @@ def submit_clip_task():
             "ffmpegPathOverride": "",
             "ffprobePathOverride": "",
             "matchBitrate": False,
-            "video_bitrate": ""
+            "video_bitrate": "3500"
         }
 
         # Merge plugin settings with defaults (only known keys)
