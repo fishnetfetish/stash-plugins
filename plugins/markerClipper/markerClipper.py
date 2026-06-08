@@ -38,6 +38,18 @@ def get_video_resolution(video_path, ffprobe_path):
         return result.stdout.strip()
     return None
 
+def get_source_bitrate(video_path, ffprobe_path):
+    """Return video bitrate in kbps (int) via ffprobe, or None on error."""
+    cmd = [ffprobe_path, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=bit_rate", "-of", "default=noprint_wrappers=1:nokey=1", video_path]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        try:
+            br = int(result.stdout.strip())
+            return max(500, br // 1000)  # kbps, floor at 500
+        except Exception:
+            return None
+    return None
+
 def format_timestamp(seconds):
     """Convert seconds to HH:MM:SS format for ffmpeg"""
     hours = int(seconds // 3600)
@@ -153,11 +165,21 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
-        # VBR bitrate mode (active)
-        if vcodec == "libx264":
-            cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
-        elif vcodec in ("h264_nvenc", "av1_nvenc"):
-            cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        # Bitrate handling
+        match_bitrate = settings.get("matchBitrate", False)
+        if match_bitrate:
+            br = get_source_bitrate(video_path, ffprobe_path) or 2500
+            maxr = f"{int(br * 1.1)}k"
+            bufs = f"{int(br * 2.2)}k"
+            if vcodec == "libx264":
+                cmd.extend(["-crf", "20", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+            elif vcodec in ("h264_nvenc", "av1_nvenc"):
+                cmd.extend(["-crf", "20", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        else:
+            if vcodec == "libx264":
+                cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+            elif vcodec in ("h264_nvenc", "av1_nvenc"):
+                cmd.extend(["-b:v", "2500k", "-maxrate", "3000k", "-bufsize", "6000k", "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
 
         resolution = settings.get("resolution") or "original"
         if resolution != "original":
@@ -259,7 +281,8 @@ def submit_clip_task():
             "filenameTemplate": "clip_{scene_id}_{timestamp}_{marker_title}",
             "outputDir": None,
             "ffmpegPathOverride": "",
-            "ffprobePathOverride": ""
+            "ffprobePathOverride": "",
+            "matchBitrate": False
         }
 
         # Merge plugin settings with defaults (only known keys)

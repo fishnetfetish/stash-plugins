@@ -1,6 +1,6 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
-version: 1.0.4
+version: 1.0.5
 url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
@@ -28,6 +28,10 @@ settings:
     displayName: Resolution Limit
     description: Maximum output resolution (e.g. 1920x1080); sources <= limit keep original resolution, larger sources are scaled to the limit - leave empty for original (no limit)
     type: STRING
+  matchBitrate:
+    displayName: Match Source Bitrate
+    description: When enabled, probe original bitrate and encode with CRF 20 + VBV to approximate source bitrate while ensuring clean cut (default false)
+    type: BOOLEAN
   paddingBefore:
     displayName: Padding Before (seconds)
     description: Seconds to include before marker start time - default is 0
