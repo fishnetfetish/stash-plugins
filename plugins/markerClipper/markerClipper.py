@@ -175,10 +175,13 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
             video_bitrate = 3500
         maxr = f"{video_bitrate * 2}k"
         bufs = f"{video_bitrate * 2}k"
-        if vcodec == "libx264":
-            cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-profile:v", "main", "-pix_fmt", "yuv420p"])
-        elif vcodec in ("h264_nvenc", "av1_nvenc"):
-            cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k", "-rc", "vbr", "-profile:v", "main", "-pix_fmt", "yuv420p"])
+        cmd.extend(["-b:v", f"{video_bitrate}k", "-maxrate", maxr, "-bufsize", bufs, "-b:a", "128k"])
+        if "h264" in vcodec.lower():
+            if "nvenc" in vcodec.lower():
+                cmd.extend(["-rc", "vbr"])
+            cmd.extend(["-pix_fmt", "yuv420p"])
+        elif "av1" in vcodec.lower():
+            cmd.extend(["-rc", "vbr", "-pix_fmt", "yuv420p"])
 
         resolution = settings.get("resolution") or "original"
         if resolution != "original":
@@ -381,28 +384,12 @@ try:
     if "mode" in json_input["args"]:
         PLUGIN_ARGS = json_input["args"]["mode"]
         log.debug(f"Plugin mode: {PLUGIN_ARGS}")
-        if "clip_marker" == PLUGIN_ARGS:
-            # Stash plugins use a single entrypoint (runPluginOperation).
-            # We therefore receive TWO distinct calls with the same mode="clip_marker":
-            #
-            # 1. UI submission (from JS callPluginAPI): contains scene_id + marker_id.
-            #    → submit_clip_task() validates, builds settings, then calls
-            #      stash.run_plugin_task(...) to enqueue the real work.
-            #
-            # 2. Background execution (later, when the queued task runs):
-            #    contains the same ids PLUS settings_json.
-            #    → clip_marker_task() performs the actual ffmpeg clip extraction.
-            #
-            # The presence/absence of settings_json is the discriminator between the two phases.
-            if "settings_json" in json_input["args"]:
-                log.debug("clip_marker mode: settings_json present → executing background clip_marker_task()")
-                clip_marker_task()
-            elif "scene_id" in json_input["args"] and "marker_id" in json_input["args"]:
-                log.debug("clip_marker mode: scene_id+marker_id present → handling UI submit_clip_task()")
-                submit_clip_task()
-            else:
-                log.error("clip_marker mode: invalid argument combination")
-                print(json.dumps({"success": False, "message": "Invalid arguments for clip_marker mode"}))
+        if PLUGIN_ARGS == "submit_clip_task":
+            # task submitted from Javascript UI
+            submit_clip_task()
+        elif PLUGIN_ARGS == "clip_marker":
+            # clip validated, settings compiled, send to ffmpeg
+            clip_marker_task()
         else:
             log.error(f"Unknown mode: {PLUGIN_ARGS}")
             print(json.dumps({"success": False, "message": f"Unknown mode: {PLUGIN_ARGS}"}))

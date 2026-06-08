@@ -211,6 +211,10 @@
         `;
         document.body.appendChild(modal);
 
+        const bitrateInput = modal.querySelector('input[name="video_bitrate"]');
+        const matchBitrateCheckbox = modal.querySelector('input[name="matchBitrate"]');
+        matchBitrateCheckbox.onchange = () => { bitrateInput.disabled = matchBitrateCheckbox.checked; };
+
         const close = () => { modal.remove(); };
         modal.querySelector('.close').onclick = close;
         modal.querySelector('#modal-cancel').onclick = close;
@@ -267,7 +271,7 @@
         if (Object.keys(settings).length > 0) {
             apiArgs.override_json = JSON.stringify(settings);
         }
-        callPluginAPI('clip_marker', apiArgs)
+        callPluginAPI('submit_clip_task', apiArgs)
             .then(result => {
                 let response = null;
                 if (result) {
