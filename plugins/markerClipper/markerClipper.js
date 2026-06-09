@@ -158,50 +158,64 @@
                         <button type="button" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     <div class="modal-body">
-                        <form id="clip-options-form">
-                            <div class="form-group">
-                                <label>Resolution</label>
-                                <select class="form-control" name="resolution">
-                                    <option value="">Default</option>
-                                    <option value="original">Original</option>
-                                    <option value="854x480">480p</option>
-                                    <option value="1280x720">720p</option>
-                                    <option value="1920x1080">1080p</option>
-                                    <option value="3840x2160">4K</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Preset</label>
-                                <select class="form-control" name="preset">
-                                    <option value="">Default</option>
-                                    <option value="superfast">superfast</option>
-                                    <option value="veryfast">veryfast</option>
-                                    <option value="faster">faster</option>
-                                    <option value="fast">fast</option>
-                                    <option value="medium">medium</option>
-                                    <option value="slow">slow</option>
-                                    <option value="slower">slower</option>
-                                    <option value="veryslow">veryslow</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Video Codec</label>
-                                <input type="text" class="form-control" name="vcodec" placeholder="libx264">
-                            </div>
-                            <div class="form-group">
-                                <label>Audio Codec</label>
-                                <input type="text" class="form-control" name="acodec" placeholder="aac">
-                            </div>
-                            <div class="form-group">
-                                <label>Bitrate (kbps)</label>
-                                <input type="number" class="form-control" name="video_bitrate" placeholder="3500">
-                            </div>
-                            <div class="form-group custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" name="matchBitrate" id="matchBitrate">
-                                <label class="custom-control-label" for="matchBitrate">Match source bitrate</label>
-                            </div>
-                        </form>
-                    </div>
+                         <form id="clip-options-form">
+                             <div class="form-group custom-control custom-switch">
+                                 <input type="checkbox" class="custom-control-input" name="keyframeCutMode" id="keyframeCutMode">
+                                 <label class="custom-control-label" for="keyframeCutMode">Keyframe Cut Mode (lossless)</label>
+                             </div>
+                             <div class="form-group">
+                                 <label>Padding Before (seconds)</label>
+                                 <input type="number" class="form-control" name="paddingBefore" placeholder="0" step="0.1">
+                             </div>
+                             <div class="form-group">
+                                 <label>Padding After (seconds)</label>
+                                 <input type="number" class="form-control" name="paddingAfter" placeholder="0" step="0.1">
+                             </div>
+                             <div id="encoding-options">
+                                 <div class="form-group">
+                                     <label>Resolution</label>
+                                     <select class="form-control" name="resolution">
+                                         <option value="">Default</option>
+                                         <option value="original">Original</option>
+                                         <option value="854x480">480p</option>
+                                         <option value="1280x720">720p</option>
+                                         <option value="1920x1080">1080p</option>
+                                         <option value="3840x2160">4K</option>
+                                     </select>
+                                 </div>
+                                 <div class="form-group">
+                                     <label>Preset</label>
+                                     <select class="form-control" name="preset">
+                                         <option value="">Default</option>
+                                         <option value="superfast">superfast</option>
+                                         <option value="veryfast">veryfast</option>
+                                         <option value="faster">faster</option>
+                                         <option value="fast">fast</option>
+                                         <option value="medium">medium</option>
+                                         <option value="slow">slow</option>
+                                         <option value="slower">slower</option>
+                                         <option value="veryslow">veryslow</option>
+                                     </select>
+                                 </div>
+                                 <div class="form-group">
+                                     <label>Video Codec</label>
+                                     <input type="text" class="form-control" name="vcodec" placeholder="libx264">
+                                 </div>
+                                 <div class="form-group">
+                                     <label>Audio Codec</label>
+                                     <input type="text" class="form-control" name="acodec" placeholder="aac">
+                                 </div>
+                                 <div class="form-group">
+                                     <label>Bitrate (kbps)</label>
+                                     <input type="number" class="form-control" name="video_bitrate" placeholder="3500">
+                                 </div>
+                                 <div class="form-group custom-control custom-switch">
+                                     <input type="checkbox" class="custom-control-input" name="matchBitrate" id="matchBitrate">
+                                     <label class="custom-control-label" for="matchBitrate">Match source bitrate</label>
+                                 </div>
+                             </div>
+                         </form>
+                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
                         <button type="button" class="btn btn-primary" id="modal-clip">✂️ Clip</button>
@@ -211,9 +225,15 @@
         `;
         document.body.appendChild(modal);
 
-        const bitrateInput = modal.querySelector('input[name="video_bitrate"]');
-        const matchBitrateCheckbox = modal.querySelector('input[name="matchBitrate"]');
-        matchBitrateCheckbox.onchange = () => { bitrateInput.disabled = matchBitrateCheckbox.checked; };
+        const encodingOptions = modal.querySelector('#encoding-options');
+        const keyframeCutCheckbox = modal.querySelector('input[name="keyframeCutMode"]');
+        keyframeCutCheckbox.onchange = () => {
+            if (keyframeCutCheckbox.checked) {
+                encodingOptions.classList.add('d-none');
+            } else {
+                encodingOptions.classList.remove('d-none');
+            }
+        };
 
         const close = () => { modal.remove(); };
         modal.querySelector('.close').onclick = close;
@@ -224,8 +244,8 @@
             const settings = {};
             for (const [key, value] of formData.entries()) {
                 if (value === '') continue;
-                if (key === 'video_bitrate') {
-                    settings[key] = parseInt(value, 10);
+                if (key === 'video_bitrate' || key === 'paddingBefore' || key === 'paddingAfter') {
+                    settings[key] = parseFloat(value);
                 } else {
                     settings[key] = value;
                 }
@@ -233,6 +253,8 @@
             // Always send matchBitrate state so modal can override plugin setting
             const matchBitrateEl = form.querySelector('input[name="matchBitrate"]');
             settings.matchBitrate = matchBitrateEl.checked;
+            const keyframeCutEl = form.querySelector('input[name="keyframeCutMode"]');
+            settings.keyframeCutMode = keyframeCutEl.checked;
             if (Object.keys(settings).length === 0) {
                 await clipMarker(loopButton);
             } else {

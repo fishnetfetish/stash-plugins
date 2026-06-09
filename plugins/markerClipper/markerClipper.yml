@@ -1,6 +1,6 @@
 name: markerClipper
 description: Plugin for extracting video clips from markers using ffmpeg
-version: 1.1.2
+version: 1.1.3
 url: https://github.com/fishnetfetish/stash-plugins/blob/main/plugins/markerClipper
 ui:
   javascript:
@@ -31,6 +31,10 @@ settings:
   matchBitrate:
     displayName: Match Source Bitrate
     description: When enabled, probe original bitrate and encode with CRF 20 + VBV to approximate source bitrate while ensuring clean cut (default false)
+    type: BOOLEAN
+  keyframeCutMode:
+    displayName: Keyframe Cut Mode
+    description: When enabled, perform lossless keyframe-accurate cuts using stream copy instead of re-encoding (default false)
     type: BOOLEAN
   video_bitrate:
     displayName: Video Bitrate (kbps)

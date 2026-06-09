@@ -135,12 +135,13 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         safe_scene = sanitize_filename(scene["title"])
         safe_marker = sanitize_filename(marker.get("title", "marker"))
+        ext = os.path.splitext(video_path)[1] if settings.get("keyframeCutMode") else ".mp4"
         filename = template.format(
             scene_title=safe_scene,
             scene_id=scene["id"],
             marker_title=safe_marker,
             timestamp=timestamp
-        ) + ".mp4"
+        ) + ext
 
         # Get default output directory (generated path + clips subdir)
         if "outputDir" not in settings or not settings.get("outputDir"):
@@ -153,44 +154,47 @@ def clip_marker(scene_id, marker, settings, ffmpeg_path, ffprobe_path, stash):
         output_path = os.path.join(output_dir, filename)
 
         # Build ffmpeg command (fast seek: -ss before -i)
-        vcodec = settings.get("vcodec") or "libx264"
         cmd = [
             ffmpeg_path,
             "-ss", str(start_time),
             "-i", video_path,
             "-t", str(duration),
-            "-c:v", vcodec,
-            "-c:a", settings.get("acodec") or "aac",
             "-movflags", "faststart",
             "-loglevel", "error"
         ]
-        if "264" in vcodec.lower():
-            cmd.extend(["-preset", settings.get("preset") or "medium"])
-        # Bitrate handling: matchBitrate > custom video_bitrate > 3500
-        video_bitrate = int(settings.get("video_bitrate", 3500))
-        if settings.get("matchBitrate") or video_bitrate == 0:
-            video_bitrate = int(get_source_bitrate(video_path, ffprobe_path) or 3500)
-        maxr = f"{video_bitrate * 2}k"
-        bufs = f"{video_bitrate * 2}k"
-        cmd.extend(["-b:v", f"{video_bitrate}k", "-b:a", "128k"])
-        if any(x in vcodec.lower() for x in ("264", "nvenc", "amf", "qsv")):
-            cmd.extend(["-maxrate", maxr, "-bufsize", bufs])
-        if any(c in vcodec.lower() for c in ("264", "av1")):
-            if any(hw in vcodec.lower() for hw in ("nvenc", "amf", "qsv")):
-                cmd.extend(["-rc", "vbr"])
-            cmd.extend(["-pix_fmt", "yuv420p"])
 
-        resolution = settings.get("resolution") or "original"
-        if resolution != "original":
-            source_res = get_video_resolution(video_path, ffprobe_path)
-            if source_res:
-                try:
-                    sw, sh = map(int, source_res.split("x"))
-                    lw, lh = map(int, resolution.split("x"))
-                    if sw > lw or sh > lh:
-                        cmd.extend(["-vf", f"scale={resolution}"])
-                except Exception:
-                    pass
+        if settings.get("keyframeCutMode"):
+            cmd.extend(["-c", "copy"])
+        else:
+            vcodec = settings.get("vcodec") or "libx264"
+            cmd.extend(["-c:v", vcodec, "-c:a", settings.get("acodec") or "aac"])
+            if "264" in vcodec.lower():
+                cmd.extend(["-preset", settings.get("preset") or "medium"])
+            # Bitrate handling: matchBitrate > custom video_bitrate > 3500
+            video_bitrate = int(settings.get("video_bitrate", 3500))
+            if settings.get("matchBitrate") or video_bitrate == 0:
+                video_bitrate = int(get_source_bitrate(video_path, ffprobe_path) or 3500)
+            maxr = f"{video_bitrate * 2}k"
+            bufs = f"{video_bitrate * 2}k"
+            cmd.extend(["-b:v", f"{video_bitrate}k", "-b:a", "128k"])
+            if any(x in vcodec.lower() for x in ("264", "nvenc", "amf", "qsv")):
+                cmd.extend(["-maxrate", maxr, "-bufsize", bufs])
+            if any(c in vcodec.lower() for c in ("264", "av1")):
+                if any(hw in vcodec.lower() for hw in ("nvenc", "amf", "qsv")):
+                    cmd.extend(["-rc", "vbr"])
+                cmd.extend(["-pix_fmt", "yuv420p"])
+
+            resolution = settings.get("resolution") or "original"
+            if resolution != "original":
+                source_res = get_video_resolution(video_path, ffprobe_path)
+                if source_res:
+                    try:
+                        sw, sh = map(int, source_res.split("x"))
+                        lw, lh = map(int, resolution.split("x"))
+                        if sw > lw or sh > lh:
+                            cmd.extend(["-vf", f"scale={resolution}"])
+                    except Exception:
+                        pass
 
         cmd.append(output_path)
 
@@ -282,7 +286,8 @@ def submit_clip_task():
             "ffmpegPathOverride": "",
             "ffprobePathOverride": "",
             "matchBitrate": False,
-            "video_bitrate": "3500"
+            "video_bitrate": "3500",
+            "keyframeCutMode": False
         }
 
         # Merge plugin settings with defaults (only known keys)
